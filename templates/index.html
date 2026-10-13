@@ -1,0 +1,198 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ISS Live Tracker</title>
+
+    <link
+        rel="stylesheet"
+        href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    />
+
+    <style>
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #0b1220;
+            color: white;
+        }
+
+        header {
+            padding: 18px 22px;
+            background: #111c30;
+            border-bottom: 1px solid #28364d;
+        }
+
+        h1 {
+            margin: 0 0 7px;
+            font-size: 24px;
+        }
+
+        header p {
+            margin: 0;
+            color: #a9bad3;
+            font-size: 14px;
+        }
+
+        .status {
+            display: inline-block;
+            margin-top: 12px;
+            padding: 6px 10px;
+            border-radius: 20px;
+            background: #493716;
+            color: #ffd58a;
+            font-size: 12px;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+            padding: 16px;
+        }
+
+        .card {
+            padding: 16px;
+            background: #111c30;
+            border: 1px solid #28364d;
+            border-radius: 12px;
+            min-width: 0;
+        }
+
+        .label {
+            color: #a9bad3;
+            font-size: 13px;
+        }
+
+        .value {
+            margin-top: 10px;
+            font-size: 22px;
+            font-weight: bold;
+            overflow-wrap: anywhere;
+        }
+
+        #map {
+            height: 55vh;
+            min-height: 320px;
+            margin: 0 16px 16px;
+            border: 1px solid #28364d;
+            border-radius: 12px;
+            overflow: hidden;
+        }
+
+        footer {
+            padding: 0 18px 18px;
+            color: #a9bad3;
+            font-size: 12px;
+        }
+
+        @media (max-width: 600px) {
+            .dashboard {
+                grid-template-columns: 1fr;
+            }
+
+            #map {
+                height: 50vh;
+                margin: 0 12px 12px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>🛰️ ISS Live Tracker</h1>
+        <p>International Space Station · Orbital tracking dashboard</p>
+        <span class="status" id="status">WAITING FOR ORBITAL DATA</span>
+    </header>
+
+    <section class="dashboard">
+        <div class="card">
+            <div class="label">Latitude</div>
+            <div class="value" id="latitude">--</div>
+        </div>
+
+        <div class="card">
+            <div class="label">Longitude</div>
+            <div class="value" id="longitude">--</div>
+        </div>
+
+        <div class="card">
+            <div class="label">Altitude</div>
+            <div class="value" id="altitude">-- km</div>
+        </div>
+    </section>
+
+    <div id="map"></div>
+
+    <footer>
+        Demo coordinates are not the current ISS position.
+        Map data © OpenStreetMap contributors.
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // Sample coordinates for interface testing only.
+        
+const map = L.map("map").setView([20, 30], 3);
+
+L.tileLayer("https://tile.openstreetmap.org/{z}/{x}/{y}.png", {
+    maxZoom: 19,
+    attribution: "&copy; OpenStreetMap contributors"
+}).addTo(map);
+
+const marker = L.marker([20, 30]).addTo(map);
+marker.setOpacity(0);
+
+
+async function updateISS() {
+    try {
+        const response = await fetch("/api/iss");
+        const data = await response.json();
+
+        
+if (!response.ok || data.status !== "success") {
+    throw new Error(data.message || "Could not get ISS position");
+}
+
+const latitude = data.latitude;
+const longitude = data.longitude;
+const altitude = data.altitude_km;
+
+marker.setLatLng([latitude, longitude]);
+marker.setOpacity(1);
+
+document.getElementById("status").textContent =
+    "ISS POSITION UPDATED";
+
+        document.getElementById("latitude").textContent =
+            latitude.toFixed(4) + "°";
+
+        document.getElementById("longitude").textContent =
+            longitude.toFixed(4) + "°";
+
+        document.getElementById("altitude").textContent =
+            altitude.toFixed(1) + " km";
+    
+} catch (error) {
+    document.getElementById("status").textContent =
+        "ORBITAL DATA UNAVAILABLE";
+
+    console.error("ISS update failed:", error);
+}
+
+}
+
+updateISS();
+setInterval(updateISS, 10000);
+
+    </script>
+</body>
+</html>
